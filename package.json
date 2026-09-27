@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "node --test database-config.test.js",
+    "test": "node --test database-config.test.js database-startup.test.js",
     "start": "node server.js",
     "dev": "node server.js"
   },

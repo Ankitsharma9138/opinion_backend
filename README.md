@@ -34,6 +34,10 @@ Missing database settings now produce a configuration error instead of silently
 connecting to localhost:3306. The server starts listening only after the initial
 database connection succeeds. Expect `Database Connected` in the deployment logs.
 If the connection fails, the log includes the error code and target host/port.
+The full startup connection and SSL handshake have a 15-second deadline.
+`DB_STARTUP_TIMEOUT` means the handshake stalled; check Aiven network access
+and the latest Render deployment's logs. `Your service is live` by itself
+does not confirm that the database connection succeeded.
 
 ## Checks
 

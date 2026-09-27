@@ -3,6 +3,7 @@ const cors = require("cors");
 const mysql = require("mysql2");
 const path = require("node:path");
 const { getDatabaseConfig } = require("./database-config");
+const { checkDatabaseConnection } = require("./database-startup");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 let databaseConfig;
@@ -1493,8 +1494,15 @@ app.use((req, res) => {
 // START SERVER
 // ======================================================
 
-db.getConnection((err, connection) => {
-  if (err) {
+console.log("Checking database connection and SSL handshake (15-second deadline)...");
+checkDatabaseConnection(db)
+  .then(() => {
+    console.log("Database Connected");
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Opiniontix Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
     console.error("Database Connection Failed", {
       code: err.code,
       message: err.message,
@@ -1508,11 +1516,4 @@ db.getConnection((err, connection) => {
       })),
     });
     process.exit(1);
-  }
-
-  connection.release();
-  console.log("Database Connected");
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Opiniontix Server running on port ${PORT}`);
   });
-});
