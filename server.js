@@ -1,7 +1,17 @@
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
-require("dotenv").config();
+const path = require("node:path");
+const { getDatabaseConfig } = require("./database-config");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
+let databaseConfig;
+try {
+  databaseConfig = getDatabaseConfig();
+} catch (error) {
+  console.error(`Database configuration error: ${error.message}`);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,44 +57,8 @@ app.post("/api/login", (req, res) => {
 // MYSQL CONNECTION
 // ======================================================
 
-console.log("DB HOST:", process.env.DB_HOST);
-
-// const db = mysql.createPool({
-//   host: process.env.DB_HOST || process.env.MYSQLHOST,
-//   port: process.env.DB_PORT || process.env.MYSQLPORT || 3306,
-//   user: process.env.DB_USER || process.env.MYSQLUSER,
-//   password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD,
-//   database: process.env.DB_NAME || process.env.MYSQLDATABASE,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0,
-// });
-
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-
-  ssl: {
-    rejectUnauthorized: false
-  },
-
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
-
-db.getConnection((err, connection) => {
-  if (err) {
-    console.error("❌ Database Connection Failed");
-    console.error(err);
-  } else {
-    console.log("✅ Database Connected");
-    connection.release();
-  }
-});
+console.log(`DB target: ${databaseConfig.host}:${databaseConfig.port}/${databaseConfig.database}`);
+const db = mysql.createPool(databaseConfig);
 // ======================================================   
 // HOME
 // ======================================================
@@ -1519,6 +1493,26 @@ app.use((req, res) => {
 // START SERVER
 // ======================================================
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Opiniontix Server running on port ${PORT}`);
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error("Database Connection Failed", {
+      code: err.code,
+      message: err.message,
+      host: databaseConfig.host,
+      port: databaseConfig.port,
+      database: databaseConfig.database,
+      causes: err.errors?.map((cause) => ({
+        code: cause.code,
+        address: cause.address,
+        port: cause.port,
+      })),
+    });
+    process.exit(1);
+  }
+
+  connection.release();
+  console.log("Database Connected");
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Opiniontix Server running on port ${PORT}`);
+  });
 });
