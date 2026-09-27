@@ -18,7 +18,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
-const API_URL = process.env.API_URL;// ======================================================
+const API_URL = (
+  process.env.API_URL?.trim() ||
+  process.env.RENDER_EXTERNAL_URL?.trim() ||
+  "https://opinion-backend-5ipv.onrender.com"
+).replace(/\/+$/, "");
+// ======================================================
 // MIDDLEWARE
 // ======================================================
 
@@ -99,7 +104,7 @@ app.post("/api/surveys", (req, res) => {
 
     // Employee survey link
  const employeeLink =
-  `${API_URL}/survey/${id}?rid={rid}`;
+  `${API_URL}/survey/${encodeURIComponent(id)}?rid={rid}`;
     const sql = `
         INSERT INTO surveys
         (
